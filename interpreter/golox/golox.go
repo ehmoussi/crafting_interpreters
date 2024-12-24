@@ -1,4 +1,4 @@
-package main
+package golox
 
 import (
 	"bufio"
@@ -14,7 +14,7 @@ func NewGoLox() *GoLox {
 	return &GoLox{}
 }
 
-func (lox *GoLox) runFile(path string) {
+func (lox *GoLox) RunFile(path string) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal("ERROR: ", err)
@@ -22,7 +22,7 @@ func (lox *GoLox) runFile(path string) {
 	lox.run(string(bytes))
 }
 
-func (lox *GoLox) runPrompt() {
+func (lox *GoLox) RunPrompt() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("> ")
