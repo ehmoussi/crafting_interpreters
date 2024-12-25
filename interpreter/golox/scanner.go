@@ -7,7 +7,7 @@ import (
 
 type Scanner struct {
 	source string
-	tokens []Token
+	tokens []*Token
 
 	start   int
 	current int
@@ -16,11 +16,11 @@ type Scanner struct {
 
 func NewScanner(source string, tokenCapacity int) *Scanner {
 	return &Scanner{
-		source: source, tokens: make([]Token, 0, tokenCapacity), start: 0, current: 0, line: 1,
+		source: source, tokens: make([]*Token, 0, tokenCapacity), start: 0, current: 0, line: 1,
 	}
 }
 
-func (s *Scanner) scanTokens() []Token {
+func (s *Scanner) scanTokens() []*Token {
 	for {
 		if s.isAtEnd() {
 			break
@@ -28,7 +28,7 @@ func (s *Scanner) scanTokens() []Token {
 		s.start = s.current
 		s.scanToken()
 	}
-	s.tokens = append(s.tokens, *NewToken(EOF, "", nil, s.line))
+	s.tokens = append(s.tokens, NewToken(EOF, "", nil, s.line))
 	return s.tokens
 }
 
@@ -127,7 +127,7 @@ func (s *Scanner) scanToken() {
 				s.addToken(IDENTIFIER)
 			}
 		} else {
-			error(s.line, "Unexpected character")
+			ReportError(s.line, "Unexpected character")
 		}
 	}
 }
@@ -165,7 +165,7 @@ func (s *Scanner) nextString() bool {
 			if c == '"' {
 				s.next()
 			} else {
-				error(s.line, "Unterminated string")
+				ReportError(s.line, "Unterminated string")
 				return false
 			}
 			break
@@ -190,7 +190,7 @@ func (s *Scanner) nextMatch(expected byte) bool {
 
 func (s *Scanner) addTokenWithLiteral(tokenType TokenType, literal any) {
 	text := s.source[s.start:s.current]
-	s.tokens = append(s.tokens, *NewToken(tokenType, text, literal, s.line))
+	s.tokens = append(s.tokens, NewToken(tokenType, text, literal, s.line))
 }
 
 func (s *Scanner) addToken(tokenType TokenType) {

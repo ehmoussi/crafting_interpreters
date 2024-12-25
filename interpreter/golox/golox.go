@@ -30,20 +30,31 @@ func (lox *GoLox) RunPrompt() {
 		if err != nil {
 			log.Println(err)
 		}
-		lox.run(line)
+		err = lox.run(line)
+		fmt.Println(err)
 	}
 }
 
-func (lox *GoLox) run(source string) {
+func ReportError(line int, message string) {
+	report(line, "", message)
+}
+
+func (lox *GoLox) run(source string) error {
+	// Find the tokens
 	scanner := NewScanner(source, 100)
 	tokens := scanner.scanTokens()
-	for _, token := range tokens {
-		fmt.Println(token.ToString())
+	// for _, token := range tokens {
+	// 	fmt.Println(token.ToString())
+	// }
+	// Parse the tokens
+	parser := NewParser[string](len(tokens))
+	parser.tokens = append(parser.tokens, tokens...)
+	expr, err := parser.Parse()
+	if err != nil {
+		return fmt.Errorf("failed to parse: %q", source)
 	}
-}
-
-func error(line int, message string) {
-	report(line, "", message)
+	fmt.Println(NewAstPrinter().Print(expr))
+	return nil
 }
 
 func report(line int, where string, message string) {
