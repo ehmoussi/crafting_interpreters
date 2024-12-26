@@ -14,12 +14,50 @@ func NewParser[T any](tokensCapacity int) *Parser[T] {
 	return &Parser[T]{tokens: tokens, current: 0}
 }
 
-func (p *Parser[T]) Parse() (Expr[T], error) {
-	if len(p.tokens) > 0 && p.tokens[0].tokenType != EOF {
-		return p.expression()
-	} else {
-		return nil, nil
+func (p *Parser[T]) Parse() ([]Stmt[T], error) {
+	statements := make([]Stmt[T], 0, 100)
+	for {
+		if p.isAtEnd() {
+			break
+		}
+		stmt, err := p.statement()
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, stmt)
 	}
+	return statements, nil
+}
+
+func (p *Parser[T]) statement() (Stmt[T], error) {
+	if p.match(PRINT) {
+		return p.printStatement()
+	}
+	return p.expressionStatement()
+}
+
+func (p *Parser[T]) printStatement() (Stmt[T], error) {
+	expr, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(SEMICOLON, "expect ';' at the end of a statement")
+	if err != nil {
+		return nil, err
+	}
+	return NewPrint(expr), nil
+}
+
+func (p *Parser[T]) expressionStatement() (Stmt[T], error) {
+	expr, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(SEMICOLON, "expect ';' at the end of a statement")
+	if err != nil {
+		return nil, err
+	}
+	return NewExpression(expr), nil
 }
 
 func (p *Parser[T]) synchronize() {

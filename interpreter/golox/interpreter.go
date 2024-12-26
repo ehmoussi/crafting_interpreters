@@ -9,6 +9,34 @@ func NewInterpreter() *Interpreter {
 	return &Interpreter{}
 }
 
+func (interp *Interpreter) interpret(statements []Stmt[any]) error {
+	for _, stmt := range statements {
+		err := interp.execute(stmt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (interp *Interpreter) visitExpressionStmt(stmt *Expression[any]) (any, error) {
+	_, err := interp.evaluate(stmt.expression)
+	return nil, err
+}
+
+func (interp *Interpreter) visitPrintStmt(stmt *Print[any]) (any, error) {
+	expr, err := interp.evaluate(stmt.expression)
+	if err == nil {
+		fmt.Println(interp.stringify(expr))
+	}
+	return nil, err
+}
+
+func (interp *Interpreter) execute(stmt Stmt[any]) error {
+	stmt.accept(interp)
+	return nil
+}
+
 func (interp *Interpreter) visitLiteralExpr(expr *Literal[any]) (any, error) {
 	return expr.value, nil
 }
@@ -135,5 +163,12 @@ func (interp *Interpreter) checkNumberOperand(operator *Token, operand any) (flo
 }
 
 func (interp *Interpreter) stringify(value any) string {
-	return fmt.Sprintf("%s", value)
+	switch value := value.(type) {
+	case bool:
+		return fmt.Sprintf("%t", value)
+	case float64:
+		return fmt.Sprintf("%f", value)
+	default:
+		return fmt.Sprintf("%s", value)
+	}
 }

@@ -9,7 +9,7 @@ import (
 
 func defineAst(outputDir string, interfaceName string, types []string) {
 	log.Println("defineAst: start")
-	path := filepath.Join(outputDir, interfaceName+".go")
+	path := filepath.Join(outputDir, strings.ToLower(interfaceName)+".go")
 	file, err := os.Create(path)
 	if err != nil {
 		log.Fatalf("ERROR: %s\n", err)
@@ -18,7 +18,7 @@ func defineAst(outputDir string, interfaceName string, types []string) {
 	file.WriteString("package golox\n")
 	file.WriteString("\n")
 	file.WriteString("type " + interfaceName + "[T any] interface {\n")
-	file.WriteString("    accept(visitor Visitor[T]) (T, error)\n")
+	file.WriteString("    accept(visitor " + interfaceName + "Visitor[T]) (T, error)\n")
 	file.WriteString("}\n")
 	file.WriteString("\n")
 	structNames := make([]string, len(types))
@@ -36,7 +36,7 @@ func defineAst(outputDir string, interfaceName string, types []string) {
 }
 
 func defineVisitor(file *os.File, interfaceName string, structNames []string) {
-	file.WriteString("type Visitor[T any] interface {\n")
+	file.WriteString("type " + interfaceName + "Visitor[T any] interface {\n")
 	for _, structName := range structNames {
 		file.WriteString("    visit" + structName + interfaceName + "(expr *" + structName + "[T]) (T, error)\n")
 	}
@@ -77,8 +77,8 @@ func defineType(file *os.File, interfaceName string, structName string, fields s
 	file.WriteString("}\n")
 	file.WriteString("\n")
 	// Implement interfaceName interface methods
-	file.WriteString("func (e *" + structName + "[T]) accept(visitor Visitor[T]) (T, error){\n")
-	file.WriteString("    return visitor.visit" + structName + interfaceName + "(e)")
+	file.WriteString("func (e *" + structName + "[T]) accept(visitor " + interfaceName + "Visitor[T]) (T, error){\n")
+	file.WriteString("    return visitor.visit" + structName + interfaceName + "(e)\n")
 	file.WriteString("}\n")
 	file.WriteString("\n")
 }
@@ -93,5 +93,9 @@ func main() {
 		"Grouping : Expr expression",
 		"Literal  : Object value",
 		"Unary    : Token operator, Expr right",
+	})
+	defineAst(outputDir, "Stmt", []string{
+		"Expression : Expr expression",
+		"Print      : Expr expression",
 	})
 }

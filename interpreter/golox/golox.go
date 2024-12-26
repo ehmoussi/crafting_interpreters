@@ -56,22 +56,22 @@ func (lox *GoLox) run(source string) error {
 	scanner := NewScanner(source, 100)
 	tokens, err := scanner.scanTokens()
 	if err != nil {
-		fmt.Print(err)
+		// fmt.Print(err)
+		return err
 	}
 	// Parse the tokens
 	parser := NewParser[any](len(tokens))
 	parser.tokens = append(parser.tokens, tokens...)
-	expr, err := parser.Parse()
-	if err != nil || expr == nil {
-		return err
-	}
-	// Print the AST
-	fmt.Println(NewAstPrinter().Print(expr))
-	// Interpret the expression
-	value, err := NewInterpreter().evaluate(expr)
+	statements, err := parser.Parse()
 	if err != nil {
 		return err
 	}
-	fmt.Println(value)
+	// Print the AST
+	// fmt.Println(NewAstPrinter().Print(statements))
+	// Interpret the expression
+	err = NewInterpreter().interpret(statements)
+	if err != nil {
+		return err
+	}
 	return nil
 }

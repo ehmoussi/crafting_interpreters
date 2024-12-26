@@ -128,6 +128,7 @@ func (s *Scanner) scanToken() error {
 			ns := s.source[s.start:s.current]
 			n, err := strconv.ParseFloat(ns, 64)
 			if err != nil {
+				// Unreachable
 				log.Fatalf("Failed to parse the float %s", ns)
 			}
 			s.addTokenWithLiteral(NUMBER, n)
