@@ -32,8 +32,25 @@ func (e *Print[T]) accept(visitor StmtVisitor[T]) (T, error){
     return visitor.visitPrintStmt(e)
 }
 
+type Var[T any] struct {
+    name *Token
+    initializer Expr[T]
+}
+
+func NewVar[T any](name *Token, initializer Expr[T]) *Var[T] {
+    return &Var[T]{
+        name: name,
+        initializer: initializer,
+    }
+}
+
+func (e *Var[T]) accept(visitor StmtVisitor[T]) (T, error){
+    return visitor.visitVarStmt(e)
+}
+
 type StmtVisitor[T any] interface {
     visitExpressionStmt(expr *Expression[T]) (T, error)
     visitPrintStmt(expr *Print[T]) (T, error)
+    visitVarStmt(expr *Var[T]) (T, error)
 }
 

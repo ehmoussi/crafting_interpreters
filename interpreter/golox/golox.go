@@ -17,11 +17,12 @@ func NewGoLox() *GoLox {
 }
 
 func (lox *GoLox) RunFile(path string) {
+	interpreter := NewInterpreter()
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal("ERROR: ", err)
 	}
-	lox.run(string(bytes))
+	lox.run(string(bytes), interpreter)
 	if err != nil {
 		fmt.Println(err)
 		var syntaxErr *SyntaxError
@@ -37,6 +38,7 @@ func (lox *GoLox) RunFile(path string) {
 }
 
 func (lox *GoLox) RunPrompt() {
+	interpreter := NewInterpreter()
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("> ")
@@ -44,14 +46,14 @@ func (lox *GoLox) RunPrompt() {
 		if err != nil {
 			log.Println(err)
 		}
-		err = lox.run(line)
+		err = lox.run(line, interpreter)
 		if err != nil {
 			fmt.Print(err)
 		}
 	}
 }
 
-func (lox *GoLox) run(source string) error {
+func (lox *GoLox) run(source string, interpreter *Interpreter) error {
 	// Find the tokens
 	scanner := NewScanner(source, 100)
 	tokens, err := scanner.scanTokens()
@@ -69,7 +71,7 @@ func (lox *GoLox) run(source string) error {
 	// Print the AST
 	// fmt.Println(NewAstPrinter().Print(statements))
 	// Interpret the expression
-	err = NewInterpreter().interpret(statements)
+	err = interpreter.interpret(statements)
 	if err != nil {
 		return err
 	}

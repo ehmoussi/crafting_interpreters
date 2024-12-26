@@ -3,10 +3,11 @@ package golox
 import "fmt"
 
 type Interpreter struct {
+	environment *Environment
 }
 
 func NewInterpreter() *Interpreter {
-	return &Interpreter{}
+	return &Interpreter{environment: NewEnvironment()}
 }
 
 func (interp *Interpreter) interpret(statements []Stmt[any]) error {
@@ -19,15 +20,28 @@ func (interp *Interpreter) interpret(statements []Stmt[any]) error {
 	return nil
 }
 
+func (interp *Interpreter) visitVarStmt(stmt *Var[any]) (any, error) {
+	var value any
+	if stmt.initializer != nil {
+		var err error
+		value, err = interp.evaluate(stmt.initializer)
+		if err != nil {
+			return nil, err
+		}
+	}
+	interp.environment.define(stmt.name.lexeme, value)
+	return nil, nil
+}
+
 func (interp *Interpreter) visitExpressionStmt(stmt *Expression[any]) (any, error) {
 	_, err := interp.evaluate(stmt.expression)
 	return nil, err
 }
 
 func (interp *Interpreter) visitPrintStmt(stmt *Print[any]) (any, error) {
-	expr, err := interp.evaluate(stmt.expression)
+	value, err := interp.evaluate(stmt.expression)
 	if err == nil {
-		fmt.Println(interp.stringify(expr))
+		fmt.Println(interp.stringify(value))
 	}
 	return nil, err
 }
@@ -43,6 +57,10 @@ func (interp *Interpreter) visitLiteralExpr(expr *Literal[any]) (any, error) {
 
 func (interp *Interpreter) visitGroupingExpr(expr *Grouping[any]) (any, error) {
 	return interp.evaluate(expr.expression)
+}
+
+func (interp *Interpreter) visitVariableExpr(expr *Variable[any]) (any, error) {
+	return interp.environment.get(expr.name)
 }
 
 func (interp *Interpreter) visitUnaryExpr(expr *Unary[any]) (any, error) {

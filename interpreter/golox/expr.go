@@ -66,10 +66,25 @@ func (e *Unary[T]) accept(visitor ExprVisitor[T]) (T, error){
     return visitor.visitUnaryExpr(e)
 }
 
+type Variable[T any] struct {
+    name *Token
+}
+
+func NewVariable[T any](name *Token) *Variable[T] {
+    return &Variable[T]{
+        name: name,
+    }
+}
+
+func (e *Variable[T]) accept(visitor ExprVisitor[T]) (T, error){
+    return visitor.visitVariableExpr(e)
+}
+
 type ExprVisitor[T any] interface {
     visitBinaryExpr(expr *Binary[T]) (T, error)
     visitGroupingExpr(expr *Grouping[T]) (T, error)
     visitLiteralExpr(expr *Literal[T]) (T, error)
     visitUnaryExpr(expr *Unary[T]) (T, error)
+    visitVariableExpr(expr *Variable[T]) (T, error)
 }
 

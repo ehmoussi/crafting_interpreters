@@ -20,13 +20,21 @@ func (p *Parser[T]) Parse() ([]Stmt[T], error) {
 		if p.isAtEnd() {
 			break
 		}
-		stmt, err := p.statement()
+		stmt, err := p.declaration()
 		if err != nil {
+			p.synchronize()
 			return nil, err
 		}
 		statements = append(statements, stmt)
 	}
 	return statements, nil
+}
+
+func (p *Parser[T]) declaration() (Stmt[T], error) {
+	if p.match(VAR) {
+		return p.varDeclaration()
+	}
+	return p.statement()
 }
 
 func (p *Parser[T]) statement() (Stmt[T], error) {
@@ -58,6 +66,25 @@ func (p *Parser[T]) expressionStatement() (Stmt[T], error) {
 		return nil, err
 	}
 	return NewExpression(expr), nil
+}
+
+func (p *Parser[T]) varDeclaration() (Stmt[T], error) {
+	name, err := p.consume(IDENTIFIER, "expect an identifier after var")
+	if err != nil {
+		return nil, err
+	}
+	var initializer Expr[T]
+	if p.match(EQUAL) {
+		initializer, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = p.consume(SEMICOLON, "expect a ';' at the end of a declaration of a variable")
+	if err != nil {
+		return nil, err
+	}
+	return NewVar(name, initializer), nil
 }
 
 func (p *Parser[T]) synchronize() {
@@ -195,6 +222,8 @@ func (p *Parser[T]) primary() (Expr[T], error) {
 			return nil, err
 		}
 		return NewGrouping(expr), nil
+	} else if p.match(IDENTIFIER) {
+		return NewVariable[T](p.previous()), nil
 	}
 	var msg string
 	if p.current != 0 {
