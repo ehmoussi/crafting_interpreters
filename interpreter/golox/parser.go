@@ -1,7 +1,7 @@
 package golox
 
 import (
-	"errors"
+	"fmt"
 )
 
 type Parser[T any] struct {
@@ -15,7 +15,11 @@ func NewParser[T any](tokensCapacity int) *Parser[T] {
 }
 
 func (p *Parser[T]) Parse() (Expr[T], error) {
-	return p.expression()
+	if len(p.tokens) > 0 && p.tokens[0].tokenType != EOF {
+		return p.expression()
+	} else {
+		return nil, nil
+	}
 }
 
 func (p *Parser[T]) synchronize() {
@@ -123,11 +127,12 @@ func (p *Parser[T]) factor() (Expr[T], error) {
 
 func (p *Parser[T]) unary() (Expr[T], error) {
 	if p.match(BANG, MINUS) {
+		operator := p.previous()
 		right, err := p.unary()
 		if err != nil {
 			return nil, err
 		}
-		return NewUnary(p.previous(), right), nil
+		return NewUnary(operator, right), nil
 	} else {
 		return p.primary()
 	}
@@ -153,15 +158,20 @@ func (p *Parser[T]) primary() (Expr[T], error) {
 		}
 		return NewGrouping(expr), nil
 	}
-	return nil, errors.New("expect expression")
+	var msg string
+	if p.current != 0 {
+		msg = fmt.Sprintf("%q is not a valid expression", p.previous().ToString())
+	} else {
+		msg = fmt.Sprintf("%q is not a valid expression", p.peek().ToString())
+	}
+	return nil, NewSyntaxError(p.peek().line, msg)
 }
 
 func (p *Parser[T]) consume(tokenType TokenType, expectMessage string) (*Token, error) {
 	if p.check(tokenType) {
 		return p.next(), nil
 	}
-	ReportError(p.peek().line, expectMessage)
-	return p.peek(), errors.New(expectMessage)
+	return p.peek(), NewSyntaxError(p.peek().line, expectMessage)
 }
 
 func (p *Parser[T]) match(tokenTypes ...TokenType) bool {

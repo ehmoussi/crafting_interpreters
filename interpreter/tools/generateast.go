@@ -18,7 +18,7 @@ func defineAst(outputDir string, interfaceName string, types []string) {
 	file.WriteString("package golox\n")
 	file.WriteString("\n")
 	file.WriteString("type " + interfaceName + "[T any] interface {\n")
-	file.WriteString("    accept(visitor Visitor[T]) T\n")
+	file.WriteString("    accept(visitor Visitor[T]) (T, error)\n")
 	file.WriteString("}\n")
 	file.WriteString("\n")
 	structNames := make([]string, len(types))
@@ -38,7 +38,7 @@ func defineAst(outputDir string, interfaceName string, types []string) {
 func defineVisitor(file *os.File, interfaceName string, structNames []string) {
 	file.WriteString("type Visitor[T any] interface {\n")
 	for _, structName := range structNames {
-		file.WriteString("    visit" + structName + interfaceName + "(expr *" + structName + "[T]) T\n")
+		file.WriteString("    visit" + structName + interfaceName + "(expr *" + structName + "[T]) (T, error)\n")
 	}
 	file.WriteString("}\n")
 	file.WriteString("\n")
@@ -77,7 +77,7 @@ func defineType(file *os.File, interfaceName string, structName string, fields s
 	file.WriteString("}\n")
 	file.WriteString("\n")
 	// Implement interfaceName interface methods
-	file.WriteString("func (e *" + structName + "[T]) accept(visitor Visitor[T]) T{\n")
+	file.WriteString("func (e *" + structName + "[T]) accept(visitor Visitor[T]) (T, error){\n")
 	file.WriteString("    return visitor.visit" + structName + interfaceName + "(e)")
 	file.WriteString("}\n")
 	file.WriteString("\n")

@@ -1,6 +1,8 @@
 package golox
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"strconv"
 )
@@ -20,21 +22,31 @@ func NewScanner(source string, tokenCapacity int) *Scanner {
 	}
 }
 
-func (s *Scanner) scanTokens() []*Token {
+func (s *Scanner) scanTokens() ([]*Token, error) {
+	errs := make([]*SyntaxError, 0, 10)
 	for {
 		if s.isAtEnd() {
 			break
 		}
 		s.start = s.current
-		s.scanToken()
+		err := s.scanToken()
+		if err != nil {
+			var syntaxErr *SyntaxError
+			if errors.As(err, &syntaxErr) {
+				errs = append(errs, syntaxErr)
+			}
+		}
 	}
 	s.tokens = append(s.tokens, NewToken(EOF, "", nil, s.line))
-	return s.tokens
+	if len(errs) > 0 {
+		return s.tokens, NewSyntaxErrors(errs...)
+	}
+	return s.tokens, nil
 }
 
 // Scan the current character and eventually the next characters to determine
 // its type add it to the list of tokens
-func (s *Scanner) scanToken() {
+func (s *Scanner) scanToken() error {
 	c := s.next()
 	switch c {
 	case '(':
@@ -85,7 +97,7 @@ func (s *Scanner) scanToken() {
 	case '/':
 		if s.nextMatch('/') {
 			for {
-				if s.peek() == '\n' || s.isAtEnd() {
+				if s.isAtEndLine() {
 					// "//" comment only one line
 					break
 				} else {
@@ -107,6 +119,8 @@ func (s *Scanner) scanToken() {
 		if s.nextString() {
 			// Ignore the surrounding quotes
 			s.addTokenWithLiteral(STRING, s.source[s.start+1:s.current-1])
+		} else {
+			return NewSyntaxError(s.line, "Unterminated string")
 		}
 	default:
 		if s.isDigit(c) {
@@ -127,9 +141,10 @@ func (s *Scanner) scanToken() {
 				s.addToken(IDENTIFIER)
 			}
 		} else {
-			ReportError(s.line, "Unexpected character")
+			return NewSyntaxError(s.line, fmt.Sprintf("Unexpected character: %q", c))
 		}
 	}
+	return nil
 }
 
 func (s *Scanner) nextIdentifier() {
@@ -165,7 +180,6 @@ func (s *Scanner) nextString() bool {
 			if c == '"' {
 				s.next()
 			} else {
-				ReportError(s.line, "Unterminated string")
 				return false
 			}
 			break
@@ -235,4 +249,13 @@ func (s *Scanner) isDigit(c byte) bool {
 // Check if the current character has reach the end of the source
 func (s *Scanner) isAtEnd() bool {
 	return s.current >= len(s.source)
+}
+
+// Check if the current character has reach the end of the line or the end of the source
+func (s *Scanner) isAtEndLine() bool {
+	length := len(s.source)
+	if s.current >= length || s.current+1 >= length || s.current+2 >= length {
+		return true
+	}
+	return s.peek() == '\r' && s.peekNext() == '\n' || s.peek() == '\n'
 }

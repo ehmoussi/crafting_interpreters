@@ -1,7 +1,7 @@
 package golox
 
 type Expr[T any] interface {
-    accept(visitor Visitor[T]) T
+    accept(visitor Visitor[T]) (T, error)
 }
 
 type Binary[T any] struct {
@@ -18,7 +18,7 @@ func NewBinary[T any](left Expr[T], operator *Token, right Expr[T]) *Binary[T] {
     }
 }
 
-func (e *Binary[T]) accept(visitor Visitor[T]) T{
+func (e *Binary[T]) accept(visitor Visitor[T]) (T, error){
     return visitor.visitBinaryExpr(e)}
 
 type Grouping[T any] struct {
@@ -31,7 +31,7 @@ func NewGrouping[T any](expression Expr[T]) *Grouping[T] {
     }
 }
 
-func (e *Grouping[T]) accept(visitor Visitor[T]) T{
+func (e *Grouping[T]) accept(visitor Visitor[T]) (T, error){
     return visitor.visitGroupingExpr(e)}
 
 type Literal[T any] struct {
@@ -44,7 +44,7 @@ func NewLiteral[T any](value any) *Literal[T] {
     }
 }
 
-func (e *Literal[T]) accept(visitor Visitor[T]) T{
+func (e *Literal[T]) accept(visitor Visitor[T]) (T, error){
     return visitor.visitLiteralExpr(e)}
 
 type Unary[T any] struct {
@@ -59,13 +59,13 @@ func NewUnary[T any](operator *Token, right Expr[T]) *Unary[T] {
     }
 }
 
-func (e *Unary[T]) accept(visitor Visitor[T]) T{
+func (e *Unary[T]) accept(visitor Visitor[T]) (T, error){
     return visitor.visitUnaryExpr(e)}
 
 type Visitor[T any] interface {
-    visitBinaryExpr(expr *Binary[T]) T
-    visitGroupingExpr(expr *Grouping[T]) T
-    visitLiteralExpr(expr *Literal[T]) T
-    visitUnaryExpr(expr *Unary[T]) T
+    visitBinaryExpr(expr *Binary[T]) (T, error)
+    visitGroupingExpr(expr *Grouping[T]) (T, error)
+    visitLiteralExpr(expr *Literal[T]) (T, error)
+    visitUnaryExpr(expr *Unary[T]) (T, error)
 }
 

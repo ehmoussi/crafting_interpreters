@@ -2,16 +2,18 @@ package golox
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 )
 
 type GoLox struct {
+	hadRuntimeError bool
 }
 
 func NewGoLox() *GoLox {
-	return &GoLox{}
+	return &GoLox{hadRuntimeError: false}
 }
 
 func (lox *GoLox) RunFile(path string) {
@@ -20,6 +22,18 @@ func (lox *GoLox) RunFile(path string) {
 		log.Fatal("ERROR: ", err)
 	}
 	lox.run(string(bytes))
+	if err != nil {
+		fmt.Println(err)
+		var syntaxErr *SyntaxError
+		var runtimeErr *RuntimeError
+		if errors.As(err, &syntaxErr) {
+			os.Exit(65)
+		} else if errors.As(err, &runtimeErr) {
+			os.Exit(70)
+		} else {
+			os.Exit(1)
+		}
+	}
 }
 
 func (lox *GoLox) RunPrompt() {
@@ -31,32 +45,33 @@ func (lox *GoLox) RunPrompt() {
 			log.Println(err)
 		}
 		err = lox.run(line)
-		fmt.Println(err)
+		if err != nil {
+			fmt.Print(err)
+		}
 	}
-}
-
-func ReportError(line int, message string) {
-	report(line, "", message)
 }
 
 func (lox *GoLox) run(source string) error {
 	// Find the tokens
 	scanner := NewScanner(source, 100)
-	tokens := scanner.scanTokens()
-	// for _, token := range tokens {
-	// 	fmt.Println(token.ToString())
-	// }
+	tokens, err := scanner.scanTokens()
+	if err != nil {
+		fmt.Print(err)
+	}
 	// Parse the tokens
-	parser := NewParser[string](len(tokens))
+	parser := NewParser[any](len(tokens))
 	parser.tokens = append(parser.tokens, tokens...)
 	expr, err := parser.Parse()
-	if err != nil {
-		return fmt.Errorf("failed to parse: %q", source)
+	if err != nil || expr == nil {
+		return err
 	}
+	// Print the AST
 	fmt.Println(NewAstPrinter().Print(expr))
+	// Interpret the expression
+	value, err := NewInterpreter().evaluate(expr)
+	if err != nil {
+		return err
+	}
+	fmt.Println(value)
 	return nil
-}
-
-func report(line int, where string, message string) {
-	fmt.Printf("[line %d] Error%s: %s\n", line, where, message)
 }
