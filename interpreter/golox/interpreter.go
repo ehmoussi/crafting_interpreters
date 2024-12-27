@@ -62,6 +62,27 @@ func (interp *Interpreter) visitExpressionStmt(stmt *Expression[any]) (any, erro
 	return value, err
 }
 
+func (interp *Interpreter) visitIfStmt(stmt *If[any]) (any, error) {
+	value, err := interp.evaluate(stmt.condition)
+	if err != nil {
+		return nil, err
+	}
+	if interp.isTruthy(value) {
+		value, err := interp.execute(stmt.thenBranch)
+		if err != nil {
+			return nil, err
+		}
+		return value, nil
+	} else if stmt.elseBranch != nil {
+		value, err := interp.execute(stmt.elseBranch)
+		if err != nil {
+			return nil, err
+		}
+		return value, nil
+	}
+	return nil, nil
+}
+
 func (interp *Interpreter) visitPrintStmt(stmt *Print[any]) (any, error) {
 	value, err := interp.evaluate(stmt.expression)
 	if err == nil {
@@ -77,6 +98,19 @@ func (interp *Interpreter) execute(stmt Stmt[any]) (any, error) {
 
 func (interp *Interpreter) visitLiteralExpr(expr *Literal[any]) (any, error) {
 	return expr.value, nil
+}
+
+func (interp *Interpreter) visitLogicalExpr(expr *Logical[any]) (any, error) {
+	leftValue, err := interp.evaluate(expr.left)
+	if err != nil {
+		return nil, err
+	}
+	if expr.operator.tokenType == AND && !interp.isTruthy(leftValue) {
+		return leftValue, nil
+	} else if expr.operator.tokenType == OR && interp.isTruthy(leftValue) {
+		return leftValue, nil
+	}
+	return interp.evaluate(expr.right)
 }
 
 func (interp *Interpreter) visitGroupingExpr(expr *Grouping[any]) (any, error) {

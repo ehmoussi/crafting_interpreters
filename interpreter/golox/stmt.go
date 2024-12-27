@@ -32,6 +32,24 @@ func (e *Expression[T]) accept(visitor StmtVisitor[T]) (T, error){
     return visitor.visitExpressionStmt(e)
 }
 
+type If[T any] struct {
+    condition Expr[T]
+    thenBranch Stmt[T]
+    elseBranch Stmt[T]
+}
+
+func NewIf[T any](condition Expr[T], thenBranch Stmt[T], elseBranch Stmt[T]) *If[T] {
+    return &If[T]{
+        condition: condition,
+        thenBranch: thenBranch,
+        elseBranch: elseBranch,
+    }
+}
+
+func (e *If[T]) accept(visitor StmtVisitor[T]) (T, error){
+    return visitor.visitIfStmt(e)
+}
+
 type Print[T any] struct {
     expression Expr[T]
 }
@@ -63,9 +81,10 @@ func (e *Var[T]) accept(visitor StmtVisitor[T]) (T, error){
 }
 
 type StmtVisitor[T any] interface {
-    visitBlockStmt(expr *Block[T]) (T, error)
-    visitExpressionStmt(expr *Expression[T]) (T, error)
-    visitPrintStmt(expr *Print[T]) (T, error)
-    visitVarStmt(expr *Var[T]) (T, error)
+    visitBlockStmt(stmt *Block[T]) (T, error)
+    visitExpressionStmt(stmt *Expression[T]) (T, error)
+    visitIfStmt(stmt *If[T]) (T, error)
+    visitPrintStmt(stmt *Print[T]) (T, error)
+    visitVarStmt(stmt *Var[T]) (T, error)
 }
 

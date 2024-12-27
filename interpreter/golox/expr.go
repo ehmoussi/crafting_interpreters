@@ -66,6 +66,24 @@ func (e *Literal[T]) accept(visitor ExprVisitor[T]) (T, error){
     return visitor.visitLiteralExpr(e)
 }
 
+type Logical[T any] struct {
+    left Expr[T]
+    operator *Token
+    right Expr[T]
+}
+
+func NewLogical[T any](left Expr[T], operator *Token, right Expr[T]) *Logical[T] {
+    return &Logical[T]{
+        left: left,
+        operator: operator,
+        right: right,
+    }
+}
+
+func (e *Logical[T]) accept(visitor ExprVisitor[T]) (T, error){
+    return visitor.visitLogicalExpr(e)
+}
+
 type Unary[T any] struct {
     operator *Token
     right Expr[T]
@@ -101,6 +119,7 @@ type ExprVisitor[T any] interface {
     visitBinaryExpr(expr *Binary[T]) (T, error)
     visitGroupingExpr(expr *Grouping[T]) (T, error)
     visitLiteralExpr(expr *Literal[T]) (T, error)
+    visitLogicalExpr(expr *Logical[T]) (T, error)
     visitUnaryExpr(expr *Unary[T]) (T, error)
     visitVariableExpr(expr *Variable[T]) (T, error)
 }

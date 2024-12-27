@@ -14,50 +14,82 @@ func NewAstPrinter() *AstPrinter {
 }
 
 func (ap *AstPrinter) Print(statements []Stmt[any]) string {
-	errorMsg := "The construction of the AST failed"
-	printStatements := ""
+	errorMsg := "the construction of the AST failed"
+	var printStatements strings.Builder
 	for _, statement := range statements {
 		value, err := statement.accept(ap)
 		if err != nil {
-			return errorMsg
+			return err.Error()
 		}
 		valueString, ok := value.(string)
 		if !ok {
 			return errorMsg
 		}
-		printStatements += valueString
+		printStatements.WriteString(valueString + "\n")
 	}
-	return printStatements
+	return printStatements.String()
 }
 
-func (ap *AstPrinter) visitBlockStmt(expr *Block[any]) (any, error) {
+func (ap *AstPrinter) visitBlockStmt(stmt *Block[any]) (any, error) {
 	var builder strings.Builder
-	builder.WriteString("{")
-	for _, statement := range expr.statements {
+	builder.WriteString("{\n")
+	for _, statement := range stmt.statements {
 		value, err := statement.accept(ap)
 		if err != nil {
 			return "", err
 		}
 		valueString, ok := value.(string)
 		if !ok {
-			return nil, errors.New("The construction of the AST failed")
+			return nil, errors.New("the construction of the AST failed")
 		}
-		builder.WriteString(valueString)
+		builder.WriteString(valueString + "\n")
 	}
 	builder.WriteString("}")
 	return builder.String(), nil
 }
 
-func (ap *AstPrinter) visitExpressionStmt(expr *Expression[any]) (any, error) {
-	return expr.expression.accept(ap)
+func (ap *AstPrinter) visitExpressionStmt(stmt *Expression[any]) (any, error) {
+	return stmt.expression.accept(ap)
 }
 
-func (ap *AstPrinter) visitPrintStmt(expr *Print[any]) (any, error) {
-	return ap.parenthesize("print", expr.expression)
+func (ap *AstPrinter) visitIfStmt(stmt *If[any]) (any, error) {
+	var builder strings.Builder
+	builder.WriteString("(")
+	condition, err := ap.parenthesize("if", stmt.condition)
+	if err != nil {
+		return nil, err
+	}
+	builder.WriteString(condition)
+	thenBranch, err := stmt.thenBranch.accept(ap)
+	if err != nil {
+		return nil, err
+	}
+	thenBranchString, ok := thenBranch.(string)
+	if !ok {
+		return nil, errors.New("the construction of the AST failed")
+	}
+	builder.WriteString(thenBranchString)
+	if stmt.elseBranch != nil {
+		elseBranch, err := stmt.elseBranch.accept(ap)
+		if err != nil {
+			return nil, err
+		}
+		elseBranchString, ok := elseBranch.(string)
+		if !ok {
+			return nil, errors.New("the construction of the AST failed")
+		}
+		builder.WriteString(elseBranchString)
+	}
+	builder.WriteString(")")
+	return builder.String(), nil
 }
 
-func (ap *AstPrinter) visitVarStmt(expr *Var[any]) (any, error) {
-	return ap.parenthesize("var "+expr.name.lexeme, expr.initializer)
+func (ap *AstPrinter) visitPrintStmt(stmt *Print[any]) (any, error) {
+	return ap.parenthesize("print", stmt.expression)
+}
+
+func (ap *AstPrinter) visitVarStmt(stmt *Var[any]) (any, error) {
+	return ap.parenthesize("var "+stmt.name.lexeme, stmt.initializer)
 }
 
 func (ap *AstPrinter) visitAssignExpr(expr *Assign[any]) (any, error) {
@@ -87,12 +119,16 @@ func (ap *AstPrinter) visitLiteralExpr(expr *Literal[any]) (any, error) {
 	return fmt.Sprintf("%v", expr.value), nil
 }
 
+func (ap *AstPrinter) visitLogicalExpr(expr *Logical[any]) (any, error) {
+	return ap.parenthesize(expr.operator.lexeme, expr.left, expr.right)
+}
+
 func (ap *AstPrinter) visitUnaryExpr(expr *Unary[any]) (any, error) {
 	return ap.parenthesize(expr.operator.lexeme, expr.right)
 }
 
 func (ap *AstPrinter) visitVariableExpr(expr *Variable[any]) (any, error) {
-	return expr.name, nil
+	return expr.name.lexeme, nil
 }
 
 func (ap *AstPrinter) parenthesize(name string, exprs ...Expr[any]) (string, error) {

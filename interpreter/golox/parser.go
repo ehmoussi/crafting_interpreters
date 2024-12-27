@@ -40,6 +40,8 @@ func (p *Parser[T]) declaration() (Stmt[T], error) {
 func (p *Parser[T]) statement() (Stmt[T], error) {
 	if p.match(PRINT) {
 		return p.printStatement()
+	} else if p.match(IF) {
+		return p.ifStatement()
 	} else if p.match(LEFT_BRACE) {
 		statements, err := p.block()
 		if err != nil {
@@ -48,6 +50,27 @@ func (p *Parser[T]) statement() (Stmt[T], error) {
 		return NewBlock(statements), nil
 	}
 	return p.expressionStatement()
+}
+
+func (p *Parser[T]) ifStatement() (Stmt[T], error) {
+	p.consume(LEFT_PAREN, "Missing parenthesis before the condition of the if statement")
+	condition, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	p.consume(RIGHT_PAREN, "Missing parenthesis after the condition of the if statement")
+	thenBranch, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+	var elseBranch Stmt[T]
+	if p.match(ELSE) {
+		elseBranch, err = p.statement()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return NewIf(condition, thenBranch, elseBranch), nil
 }
 
 func (p *Parser[T]) block() ([]Stmt[T], error) {
@@ -140,7 +163,7 @@ func (p *Parser[T]) expression() (Expr[T], error) {
 }
 
 func (p *Parser[T]) assignment() (Expr[T], error) {
-	expr, err := p.equality()
+	expr, err := p.logicalOr()
 	if p.match(EQUAL) {
 		equals := p.previous()
 		expr, ok := expr.(*Variable[T])
@@ -154,6 +177,46 @@ func (p *Parser[T]) assignment() (Expr[T], error) {
 		return nil, NewSyntaxError(equals.line, "Invalid assignment target.")
 	}
 	return expr, err
+}
+
+func (p *Parser[T]) logicalOr() (Expr[T], error) {
+	leftExpr, err := p.logicalAnd()
+	if err != nil {
+		return nil, err
+	}
+	var rightExpr Expr[T]
+	for {
+		if !p.match(OR) {
+			break
+		}
+		operator := p.previous()
+		rightExpr, err = p.logicalAnd()
+		if err != nil {
+			return nil, err
+		}
+		leftExpr = NewLogical(leftExpr, operator, rightExpr)
+	}
+	return leftExpr, nil
+}
+
+func (p *Parser[T]) logicalAnd() (Expr[T], error) {
+	leftExpr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+	var rightExpr Expr[T]
+	for {
+		if !p.match(AND) {
+			break
+		}
+		operator := p.previous()
+		rightExpr, err = p.equality()
+		if err != nil {
+			return nil, err
+		}
+		leftExpr = NewLogical(leftExpr, operator, rightExpr)
+	}
+	return leftExpr, nil
 }
 
 func (p *Parser[T]) equality() (Expr[T], error) {

@@ -38,7 +38,7 @@ func defineAst(outputDir string, interfaceName string, types []string) {
 func defineVisitor(file *os.File, interfaceName string, structNames []string) {
 	file.WriteString("type " + interfaceName + "Visitor[T any] interface {\n")
 	for _, structName := range structNames {
-		file.WriteString("    visit" + structName + interfaceName + "(expr *" + structName + "[T]) (T, error)\n")
+		file.WriteString("    visit" + structName + interfaceName + "(" + strings.ToLower(interfaceName) + " *" + structName + "[T]) (T, error)\n")
 	}
 	file.WriteString("}\n")
 	file.WriteString("\n")
@@ -56,9 +56,9 @@ func defineType(file *os.File, interfaceName string, structName string, fields s
 		fieldType := fieldDefList[0]
 		if fieldType == "Object" {
 			fieldType = "any"
-		} else if fieldType == "Expr" {
+		} else if fieldType == "Expr" || fieldType == "Stmt" {
 			fieldType = fieldType + "[T]"
-		} else if fieldType[0:5] == "List<" && fieldType[len(fieldType)-1] == '>' {
+		} else if len(fieldType) > 5 && fieldType[0:5] == "List<" && fieldType[len(fieldType)-1] == '>' {
 			fieldType = "[]" + fieldType[5:len(fieldType)-1] + "[T]"
 		} else {
 			fieldType = "*" + fieldType
@@ -95,12 +95,14 @@ func main() {
 		"Binary   : Expr left, Token operator, Expr right",
 		"Grouping : Expr expression",
 		"Literal  : Object value",
+		"Logical  : Expr left, Token operator, Expr right",
 		"Unary    : Token operator, Expr right",
 		"Variable : Token name",
 	})
 	defineAst(outputDir, "Stmt", []string{
 		"Block      : List<Stmt> statements",
 		"Expression : Expr expression",
+		"If         : Expr condition, Stmt thenBranch, Stmt elseBranch",
 		"Print      : Expr expression",
 		"Var        : Token name, Expr initializer",
 	})
