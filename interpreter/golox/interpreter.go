@@ -12,6 +12,7 @@ type Interpreter struct {
 func NewInterpreter() *Interpreter {
 	globals := NewEnvironment()
 	globals.define("clock", &Clock{})
+	globals.define("readFile", &ReadFile{})
 	return &Interpreter{environment: globals, globals: globals}
 }
 
