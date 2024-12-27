@@ -109,7 +109,10 @@ func (ap *AstPrinter) visitPrintStmt(stmt *Print[any]) (any, error) {
 }
 
 func (ap *AstPrinter) visitVarStmt(stmt *Var[any]) (any, error) {
-	return ap.parenthesize("var "+stmt.name.lexeme, stmt.initializer)
+	if stmt.initializer != nil {
+		return ap.parenthesize("var "+stmt.name.lexeme, stmt.initializer)
+	}
+	return "(var " + stmt.name.lexeme, nil
 }
 
 func (ap *AstPrinter) visitAssignExpr(expr *Assign[any]) (any, error) {

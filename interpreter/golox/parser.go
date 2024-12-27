@@ -44,6 +44,8 @@ func (p *Parser[T]) statement() (Stmt[T], error) {
 		return p.ifStatement()
 	} else if p.match(WHILE) {
 		return p.whileStatement()
+	} else if p.match(FOR) {
+		return p.forStatement()
 	} else if p.match(LEFT_BRACE) {
 		statements, err := p.block()
 		if err != nil {
@@ -52,6 +54,55 @@ func (p *Parser[T]) statement() (Stmt[T], error) {
 		return NewBlock(statements), nil
 	}
 	return p.expressionStatement()
+}
+
+func (p *Parser[T]) forStatement() (Stmt[T], error) {
+	_, err := p.consume(LEFT_PAREN, "Missing parenthesis before the clauses of the for statement")
+	if err != nil {
+		return nil, err
+	}
+	var initializer Stmt[T]
+	if p.match(VAR) {
+		initializer, err = p.varDeclaration()
+	} else if !p.match(SEMICOLON) {
+		initializer, err = p.expressionStatement()
+	}
+	if err != nil {
+		return nil, err
+	}
+	var condition Expr[T]
+	if !p.check(SEMICOLON) {
+		condition, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	p.consume(SEMICOLON, "expect a ';' at the end of a condition")
+	var increment Expr[T]
+	if !p.check(RIGHT_PAREN) {
+		increment, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	p.consume(RIGHT_PAREN, "expect a ')' at the end of a condition")
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+	if increment != nil {
+		body = NewBlock([]Stmt[T]{
+			body,
+			NewExpression(increment),
+		})
+	}
+	if condition != nil {
+		body = NewWhile(condition, body)
+	}
+	if initializer != nil {
+		body = NewBlock([]Stmt[T]{initializer, body})
+	}
+	return body, nil
 }
 
 func (p *Parser[T]) whileStatement() (Stmt[T], error) {

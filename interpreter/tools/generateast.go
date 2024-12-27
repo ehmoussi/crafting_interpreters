@@ -106,5 +106,6 @@ func main() {
 		"Print      : Expr expression",
 		"Var        : Token name, Expr initializer",
 		"While      : Expr condition, Stmt body",
+		// "For        : Stmt initializer, Expr condition, Expr increment, Stmt body",
 	})
 }
