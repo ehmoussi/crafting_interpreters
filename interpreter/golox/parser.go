@@ -42,6 +42,8 @@ func (p *Parser[T]) statement() (Stmt[T], error) {
 		return p.printStatement()
 	} else if p.match(IF) {
 		return p.ifStatement()
+	} else if p.match(WHILE) {
+		return p.whileStatement()
 	} else if p.match(LEFT_BRACE) {
 		statements, err := p.block()
 		if err != nil {
@@ -52,13 +54,39 @@ func (p *Parser[T]) statement() (Stmt[T], error) {
 	return p.expressionStatement()
 }
 
-func (p *Parser[T]) ifStatement() (Stmt[T], error) {
-	p.consume(LEFT_PAREN, "Missing parenthesis before the condition of the if statement")
+func (p *Parser[T]) whileStatement() (Stmt[T], error) {
+	_, err := p.consume(LEFT_PAREN, "Missing parenthesis before the condition of the while statement")
+	if err != nil {
+		return nil, err
+	}
 	condition, err := p.expression()
 	if err != nil {
 		return nil, err
 	}
-	p.consume(RIGHT_PAREN, "Missing parenthesis after the condition of the if statement")
+	_, err = p.consume(RIGHT_PAREN, "Missing parenthesis after the condition of the while statement")
+	if err != nil {
+		return nil, err
+	}
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+	return NewWhile(condition, body), nil
+}
+
+func (p *Parser[T]) ifStatement() (Stmt[T], error) {
+	_, err := p.consume(LEFT_PAREN, "Missing parenthesis before the condition of the if statement")
+	if err != nil {
+		return nil, err
+	}
+	condition, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(RIGHT_PAREN, "Missing parenthesis after the condition of the if statement")
+	if err != nil {
+		return nil, err
+	}
 	thenBranch, err := p.statement()
 	if err != nil {
 		return nil, err

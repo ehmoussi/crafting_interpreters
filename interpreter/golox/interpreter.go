@@ -62,6 +62,23 @@ func (interp *Interpreter) visitExpressionStmt(stmt *Expression[any]) (any, erro
 	return value, err
 }
 
+func (interp *Interpreter) visitWhileStmt(stmt *While[any]) (any, error) {
+	for {
+		value, err := interp.evaluate(stmt.condition)
+		if err != nil {
+			return nil, err
+		}
+		if !interp.isTruthy(value) {
+			break
+		}
+		_, err = interp.execute(stmt.body)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
+
 func (interp *Interpreter) visitIfStmt(stmt *If[any]) (any, error) {
 	value, err := interp.evaluate(stmt.condition)
 	if err != nil {

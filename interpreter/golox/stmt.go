@@ -80,11 +80,28 @@ func (e *Var[T]) accept(visitor StmtVisitor[T]) (T, error){
     return visitor.visitVarStmt(e)
 }
 
+type While[T any] struct {
+    condition Expr[T]
+    body Stmt[T]
+}
+
+func NewWhile[T any](condition Expr[T], body Stmt[T]) *While[T] {
+    return &While[T]{
+        condition: condition,
+        body: body,
+    }
+}
+
+func (e *While[T]) accept(visitor StmtVisitor[T]) (T, error){
+    return visitor.visitWhileStmt(e)
+}
+
 type StmtVisitor[T any] interface {
     visitBlockStmt(stmt *Block[T]) (T, error)
     visitExpressionStmt(stmt *Expression[T]) (T, error)
     visitIfStmt(stmt *If[T]) (T, error)
     visitPrintStmt(stmt *Print[T]) (T, error)
     visitVarStmt(stmt *Var[T]) (T, error)
+    visitWhileStmt(stmt *While[T]) (T, error)
 }
 

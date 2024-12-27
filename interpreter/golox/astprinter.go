@@ -52,6 +52,26 @@ func (ap *AstPrinter) visitExpressionStmt(stmt *Expression[any]) (any, error) {
 	return stmt.expression.accept(ap)
 }
 
+func (ap *AstPrinter) visitWhileStmt(stmt *While[any]) (any, error) {
+	var builder strings.Builder
+	builder.WriteString("(")
+	condition, err := ap.parenthesize("while", stmt.condition)
+	if err != nil {
+		return nil, err
+	}
+	builder.WriteString(condition)
+	body, err := stmt.body.accept(ap)
+	if err != nil {
+		return nil, err
+	}
+	bodyString, ok := body.(string)
+	if !ok {
+		return nil, errors.New("the construction of the AST failed")
+	}
+	builder.WriteString(bodyString)
+	return builder.String(), nil
+}
+
 func (ap *AstPrinter) visitIfStmt(stmt *If[any]) (any, error) {
 	var builder strings.Builder
 	builder.WriteString("(")
