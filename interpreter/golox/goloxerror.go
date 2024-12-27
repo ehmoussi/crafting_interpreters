@@ -12,7 +12,7 @@ func NewSyntaxError(line int, message string) *SyntaxError {
 }
 
 func (e *SyntaxError) Error() string {
-	return fmt.Sprintf("[line %d] SYNTAX ERROR: %s\n", e.line, e.message)
+	return fmt.Sprintf("[line %d] SYNTAX ERROR: %s", e.line, e.message)
 }
 
 type SyntaxErrors struct {
@@ -41,5 +41,5 @@ func NewRuntimeError(token *Token, message string) *RuntimeError {
 }
 
 func (e *RuntimeError) Error() string {
-	return fmt.Sprintf("[line %d] RUNTIME ERROR: %s\n", e.token.line, e.message)
+	return fmt.Sprintf("[line %d] RUNTIME ERROR: %s", e.token.line, e.message)
 }

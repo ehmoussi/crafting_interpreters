@@ -49,7 +49,7 @@ func (lox *GoLox) RunPrompt() {
 		}
 		err = lox.run(line, interpreter, true)
 		if err != nil {
-			fmt.Print(err)
+			fmt.Println(err)
 		}
 	}
 }
