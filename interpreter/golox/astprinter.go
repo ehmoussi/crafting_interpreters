@@ -13,16 +13,45 @@ func NewAstPrinter() *AstPrinter {
 	return &AstPrinter{}
 }
 
-func (ap *AstPrinter) Print(expr Expr[any]) string {
-	value, err := expr.accept(ap)
+func (ap *AstPrinter) Print(statements []Stmt[any]) string {
+	errorMsg := "The construction of the AST failed"
+	printStatements := ""
+	for _, statement := range statements {
+		value, err := statement.accept(ap)
+		if err != nil {
+			return errorMsg
+		}
+		valueString, ok := value.(string)
+		if !ok {
+			return errorMsg
+		}
+		printStatements += valueString
+	}
+	return printStatements
+}
+
+func (ap *AstPrinter) visitExpressionStmt(expr *Expression[any]) (any, error) {
+	return expr.expression.accept(ap)
+}
+
+func (ap *AstPrinter) visitPrintStmt(expr *Print[any]) (any, error) {
+	return ap.parenthesize("print", expr.expression)
+}
+
+func (ap *AstPrinter) visitVarStmt(expr *Var[any]) (any, error) {
+	return ap.parenthesize("var "+expr.name.lexeme, expr.initializer)
+}
+
+func (ap *AstPrinter) visitAssignExpr(expr *Assign[any]) (any, error) {
+	var builder strings.Builder
+	builder.WriteString("(=")
+	assignement, err := ap.parenthesize(expr.name.lexeme, expr.value)
 	if err != nil {
-		return err.Error()
+		return "", err
 	}
-	valueString, ok := value.(string)
-	if !ok {
-		return "Unexpected error: the expression is not a string"
-	}
-	return valueString
+	builder.WriteString(assignement)
+	builder.WriteString(")")
+	return builder.String(), nil
 }
 
 func (ap *AstPrinter) visitBinaryExpr(expr *Binary[any]) (any, error) {
@@ -60,7 +89,7 @@ func (ap *AstPrinter) parenthesize(name string, exprs ...Expr[any]) (string, err
 		}
 		eString, ok := e.(string)
 		if !ok {
-			return "", errors.New("Unexpected error: the expression is not a string")
+			return "", errors.New("unexpected error: the expression is not a string")
 		}
 		builder.WriteString(eString)
 	}

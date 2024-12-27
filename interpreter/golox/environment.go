@@ -25,3 +25,12 @@ func (e *Environment) get(name *Token) (any, error) {
 	}
 	return value, nil
 }
+
+func (e *Environment) assign(name *Token, value any) error {
+	_, err := e.get(name)
+	if err != nil {
+		return err
+	}
+	e.values[name.lexeme] = value
+	return nil
+}

@@ -4,6 +4,22 @@ type Expr[T any] interface {
     accept(visitor ExprVisitor[T]) (T, error)
 }
 
+type Assign[T any] struct {
+    name *Token
+    value Expr[T]
+}
+
+func NewAssign[T any](name *Token, value Expr[T]) *Assign[T] {
+    return &Assign[T]{
+        name: name,
+        value: value,
+    }
+}
+
+func (e *Assign[T]) accept(visitor ExprVisitor[T]) (T, error){
+    return visitor.visitAssignExpr(e)
+}
+
 type Binary[T any] struct {
     left Expr[T]
     operator *Token
@@ -81,6 +97,7 @@ func (e *Variable[T]) accept(visitor ExprVisitor[T]) (T, error){
 }
 
 type ExprVisitor[T any] interface {
+    visitAssignExpr(expr *Assign[T]) (T, error)
     visitBinaryExpr(expr *Binary[T]) (T, error)
     visitGroupingExpr(expr *Grouping[T]) (T, error)
     visitLiteralExpr(expr *Literal[T]) (T, error)

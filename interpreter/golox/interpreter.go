@@ -47,8 +47,8 @@ func (interp *Interpreter) visitPrintStmt(stmt *Print[any]) (any, error) {
 }
 
 func (interp *Interpreter) execute(stmt Stmt[any]) error {
-	stmt.accept(interp)
-	return nil
+	_, err := stmt.accept(interp)
+	return err
 }
 
 func (interp *Interpreter) visitLiteralExpr(expr *Literal[any]) (any, error) {
@@ -142,6 +142,18 @@ func (interp *Interpreter) visitBinaryExpr(expr *Binary[any]) (any, error) {
 		return left == right, nil
 	}
 	return nil, NewRuntimeError(expr.operator, "The operator is no valid for binary expression")
+}
+
+func (interp *Interpreter) visitAssignExpr(expr *Assign[any]) (any, error) {
+	value, err := interp.evaluate(expr.value)
+	if err != nil {
+		return nil, err
+	}
+	err = interp.environment.assign(expr.name, value)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
 }
 
 func (interp *Interpreter) evaluate(expr Expr[any]) (any, error) {

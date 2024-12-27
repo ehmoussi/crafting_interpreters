@@ -111,7 +111,24 @@ func (p *Parser[T]) synchronize() {
 }
 
 func (p *Parser[T]) expression() (Expr[T], error) {
-	return p.equality()
+	return p.assignment()
+}
+
+func (p *Parser[T]) assignment() (Expr[T], error) {
+	expr, err := p.equality()
+	if p.match(EQUAL) {
+		equals := p.previous()
+		expr, ok := expr.(*Variable[T])
+		if ok {
+			value, err := p.assignment()
+			if err != nil {
+				return nil, err
+			}
+			return NewAssign(expr.name, value), nil
+		}
+		return nil, NewRuntimeError(equals, "Invalid assignment target.")
+	}
+	return expr, err
 }
 
 func (p *Parser[T]) equality() (Expr[T], error) {
