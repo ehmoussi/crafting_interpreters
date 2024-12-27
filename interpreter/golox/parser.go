@@ -383,8 +383,56 @@ func (p *Parser[T]) unary() (Expr[T], error) {
 		}
 		return NewUnary(operator, right), nil
 	} else {
-		return p.primary()
+		return p.call()
 	}
+}
+
+func (p *Parser[T]) call() (Expr[T], error) {
+	callee, err := p.primary()
+	if err != nil {
+		return nil, err
+	}
+	for {
+		if !p.match(LEFT_PAREN) {
+			break
+		}
+		paren := p.previous()
+		var arguments []Expr[T]
+		if !p.check(RIGHT_PAREN) {
+			arguments, err = p.arguments()
+			if err != nil {
+				return nil, err
+			}
+		}
+		_, err = p.consume(RIGHT_PAREN, "expect ')' after the arguments")
+		if err != nil {
+			return nil, err
+		}
+		callee = NewCall(callee, paren, arguments)
+	}
+	return callee, nil
+}
+func (p *Parser[T]) arguments() ([]Expr[T], error) {
+	arguments := make([]Expr[T], 0, 10)
+	expr, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	arguments = append(arguments, expr)
+	for {
+		if !p.match(COMMA) {
+			break
+		}
+		if len(arguments) > 255 {
+			return nil, NewSyntaxError(p.peek().line, "can't have more than 255 arguments")
+		}
+		expr, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+		arguments = append(arguments, expr)
+	}
+	return arguments, nil
 }
 
 func (p *Parser[T]) primary() (Expr[T], error) {

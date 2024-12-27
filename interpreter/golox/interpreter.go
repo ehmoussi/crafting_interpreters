@@ -1,13 +1,18 @@
 package golox
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Interpreter struct {
 	environment *Environment
+	globals     *Environment
 }
 
 func NewInterpreter() *Interpreter {
-	return &Interpreter{environment: NewEnvironment()}
+	globals := NewEnvironment()
+	globals.define("clock", &Clock{})
+	return &Interpreter{environment: globals, globals: globals}
 }
 
 func (interp *Interpreter) interpret(statements []Stmt[any], isRepl bool) ([]string, error) {
@@ -151,6 +156,40 @@ func (interp *Interpreter) visitUnaryExpr(expr *Unary[any]) (any, error) {
 		return -rightValue, nil
 	}
 	return nil, NewRuntimeError(expr.operator, "The operator is not valid for unary expression")
+}
+
+func (interp *Interpreter) visitCallExpr(expr *Call[any]) (any, error) {
+	callee, err := interp.evaluate(expr.callee)
+	if err != nil {
+		return nil, err
+	}
+	callable, ok := callee.(GoLoxCallable)
+	if !ok {
+		return nil, NewRuntimeError(expr.paren, fmt.Sprintf("'%s' is not a callable", callee))
+	}
+	if len(expr.arguments) > callable.arity() {
+		return nil, NewRuntimeError(
+			expr.paren,
+			fmt.Sprintf(
+				"expected %d arguments but got %d",
+				callable.arity(),
+				len(expr.arguments),
+			),
+		)
+	}
+	args := make([]any, len(expr.arguments))
+	for i, argument := range expr.arguments {
+		argValue, err := interp.evaluate(argument)
+		if err != nil {
+			return nil, err
+		}
+		args[i] = argValue
+	}
+	value, err := callable.call(interp, args)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
 }
 
 func (interp *Interpreter) visitBinaryExpr(expr *Binary[any]) (any, error) {

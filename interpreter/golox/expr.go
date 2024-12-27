@@ -38,6 +38,24 @@ func (e *Binary[T]) accept(visitor ExprVisitor[T]) (T, error){
     return visitor.visitBinaryExpr(e)
 }
 
+type Call[T any] struct {
+    callee Expr[T]
+    paren *Token
+    arguments []Expr[T]
+}
+
+func NewCall[T any](callee Expr[T], paren *Token, arguments []Expr[T]) *Call[T] {
+    return &Call[T]{
+        callee: callee,
+        paren: paren,
+        arguments: arguments,
+    }
+}
+
+func (e *Call[T]) accept(visitor ExprVisitor[T]) (T, error){
+    return visitor.visitCallExpr(e)
+}
+
 type Grouping[T any] struct {
     expression Expr[T]
 }
@@ -117,6 +135,7 @@ func (e *Variable[T]) accept(visitor ExprVisitor[T]) (T, error){
 type ExprVisitor[T any] interface {
     visitAssignExpr(expr *Assign[T]) (T, error)
     visitBinaryExpr(expr *Binary[T]) (T, error)
+    visitCallExpr(expr *Call[T]) (T, error)
     visitGroupingExpr(expr *Grouping[T]) (T, error)
     visitLiteralExpr(expr *Literal[T]) (T, error)
     visitLogicalExpr(expr *Logical[T]) (T, error)

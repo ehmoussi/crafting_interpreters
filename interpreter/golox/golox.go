@@ -70,7 +70,7 @@ func (lox *GoLox) run(source string, interpreter *Interpreter, isRepl bool) erro
 		return err
 	}
 	// Print the AST
-	fmt.Println(NewAstPrinter().Print(statements))
+	// fmt.Println(NewAstPrinter().Print(statements))
 	// Interpret the expression
 	values, err := interpreter.interpret(statements, isRepl)
 	if err != nil {

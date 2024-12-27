@@ -131,6 +131,11 @@ func (ap *AstPrinter) visitBinaryExpr(expr *Binary[any]) (any, error) {
 	return ap.parenthesize(expr.operator.lexeme, expr.left, expr.right)
 }
 
+func (ap *AstPrinter) visitCallExpr(expr *Call[any]) (any, error) {
+	// NOT IMPLEMENTED
+	return "", nil
+}
+
 func (ap *AstPrinter) visitGroupingExpr(expr *Grouping[any]) (any, error) {
 	return ap.parenthesize("group", expr.expression)
 }
