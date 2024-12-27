@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 type GoLox struct {
@@ -22,7 +23,7 @@ func (lox *GoLox) RunFile(path string) {
 	if err != nil {
 		log.Fatal("ERROR: ", err)
 	}
-	lox.run(string(bytes), interpreter)
+	lox.run(string(bytes), interpreter, false)
 	if err != nil {
 		fmt.Println(err)
 		var syntaxErr *SyntaxError
@@ -46,14 +47,14 @@ func (lox *GoLox) RunPrompt() {
 		if err != nil {
 			log.Println(err)
 		}
-		err = lox.run(line, interpreter)
+		err = lox.run(line, interpreter, true)
 		if err != nil {
 			fmt.Print(err)
 		}
 	}
 }
 
-func (lox *GoLox) run(source string, interpreter *Interpreter) error {
+func (lox *GoLox) run(source string, interpreter *Interpreter, isRepl bool) error {
 	// Find the tokens
 	scanner := NewScanner(source, 100)
 	tokens, err := scanner.scanTokens()
@@ -71,9 +72,12 @@ func (lox *GoLox) run(source string, interpreter *Interpreter) error {
 	// Print the AST
 	// fmt.Println(NewAstPrinter().Print(statements))
 	// Interpret the expression
-	err = interpreter.interpret(statements)
+	values, err := interpreter.interpret(statements, isRepl)
 	if err != nil {
 		return err
+	}
+	if len(values) > 0 {
+		fmt.Println(strings.Join(values, "\n"))
 	}
 	return nil
 }

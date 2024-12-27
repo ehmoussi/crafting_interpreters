@@ -40,8 +40,33 @@ func (p *Parser[T]) declaration() (Stmt[T], error) {
 func (p *Parser[T]) statement() (Stmt[T], error) {
 	if p.match(PRINT) {
 		return p.printStatement()
+	} else if p.match(LEFT_BRACE) {
+		statements, err := p.block()
+		if err != nil {
+			return nil, err
+		}
+		return NewBlock(statements), nil
 	}
 	return p.expressionStatement()
+}
+
+func (p *Parser[T]) block() ([]Stmt[T], error) {
+	statements := make([]Stmt[T], 0, 15)
+	for {
+		if p.isAtEnd() || p.check(RIGHT_BRACE) {
+			break
+		}
+		statement, err := p.declaration()
+		if err != nil {
+			return statements, err
+		}
+		statements = append(statements, statement)
+	}
+	_, err := p.consume(RIGHT_BRACE, "Expect a '}' at the end of a block")
+	if err != nil {
+		return statements, err
+	}
+	return statements, nil
 }
 
 func (p *Parser[T]) printStatement() (Stmt[T], error) {
@@ -126,7 +151,7 @@ func (p *Parser[T]) assignment() (Expr[T], error) {
 			}
 			return NewAssign(expr.name, value), nil
 		}
-		return nil, NewRuntimeError(equals, "Invalid assignment target.")
+		return nil, NewSyntaxError(equals.line, "Invalid assignment target.")
 	}
 	return expr, err
 }

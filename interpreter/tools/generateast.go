@@ -58,6 +58,8 @@ func defineType(file *os.File, interfaceName string, structName string, fields s
 			fieldType = "any"
 		} else if fieldType == "Expr" {
 			fieldType = fieldType + "[T]"
+		} else if fieldType[0:5] == "List<" && fieldType[len(fieldType)-1] == '>' {
+			fieldType = "[]" + fieldType[5:len(fieldType)-1] + "[T]"
 		} else {
 			fieldType = "*" + fieldType
 		}
@@ -97,6 +99,7 @@ func main() {
 		"Variable : Token name",
 	})
 	defineAst(outputDir, "Stmt", []string{
+		"Block      : List<Stmt> statements",
 		"Expression : Expr expression",
 		"Print      : Expr expression",
 		"Var        : Token name, Expr initializer",

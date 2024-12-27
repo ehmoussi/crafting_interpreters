@@ -10,14 +10,22 @@ func NewInterpreter() *Interpreter {
 	return &Interpreter{environment: NewEnvironment()}
 }
 
-func (interp *Interpreter) interpret(statements []Stmt[any]) error {
+func (interp *Interpreter) interpret(statements []Stmt[any], isRepl bool) ([]string, error) {
+	capacity := 0
+	if isRepl {
+		capacity = 50
+	}
+	values := make([]string, 0, capacity)
 	for _, stmt := range statements {
-		err := interp.execute(stmt)
+		value, err := interp.execute(stmt)
 		if err != nil {
-			return err
+			return nil, err
+		}
+		if value != nil && isRepl {
+			values = append(values, interp.stringify(value))
 		}
 	}
-	return nil
+	return values, nil
 }
 
 func (interp *Interpreter) visitVarStmt(stmt *Var[any]) (any, error) {
@@ -30,12 +38,28 @@ func (interp *Interpreter) visitVarStmt(stmt *Var[any]) (any, error) {
 		}
 	}
 	interp.environment.define(stmt.name.lexeme, value)
-	return nil, nil
+	return value, nil
+}
+
+func (interp *Interpreter) visitBlockStmt(expr *Block[any]) (any, error) {
+	values := make([]any, 0, 50)
+	currentEnv := interp.environment
+	interp.environment = NewEnvironmentWithEnclosing(currentEnv)
+	for _, statement := range expr.statements {
+		value, err := interp.execute(statement)
+		if err != nil {
+			interp.environment = currentEnv
+			return nil, err
+		}
+		values = append(values, value)
+	}
+	interp.environment = currentEnv
+	return values, nil
 }
 
 func (interp *Interpreter) visitExpressionStmt(stmt *Expression[any]) (any, error) {
-	_, err := interp.evaluate(stmt.expression)
-	return nil, err
+	value, err := interp.evaluate(stmt.expression)
+	return value, err
 }
 
 func (interp *Interpreter) visitPrintStmt(stmt *Print[any]) (any, error) {
@@ -46,9 +70,9 @@ func (interp *Interpreter) visitPrintStmt(stmt *Print[any]) (any, error) {
 	return nil, err
 }
 
-func (interp *Interpreter) execute(stmt Stmt[any]) error {
-	_, err := stmt.accept(interp)
-	return err
+func (interp *Interpreter) execute(stmt Stmt[any]) (any, error) {
+	value, err := stmt.accept(interp)
+	return value, err
 }
 
 func (interp *Interpreter) visitLiteralExpr(expr *Literal[any]) (any, error) {

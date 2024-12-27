@@ -30,6 +30,24 @@ func (ap *AstPrinter) Print(statements []Stmt[any]) string {
 	return printStatements
 }
 
+func (ap *AstPrinter) visitBlockStmt(expr *Block[any]) (any, error) {
+	var builder strings.Builder
+	builder.WriteString("{")
+	for _, statement := range expr.statements {
+		value, err := statement.accept(ap)
+		if err != nil {
+			return "", err
+		}
+		valueString, ok := value.(string)
+		if !ok {
+			return nil, errors.New("The construction of the AST failed")
+		}
+		builder.WriteString(valueString)
+	}
+	builder.WriteString("}")
+	return builder.String(), nil
+}
+
 func (ap *AstPrinter) visitExpressionStmt(expr *Expression[any]) (any, error) {
 	return expr.expression.accept(ap)
 }
