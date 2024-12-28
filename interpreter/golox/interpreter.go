@@ -188,7 +188,7 @@ func (interp *Interpreter) visitCallExpr(expr *Call[any]) (any, error) {
 	}
 	value, err := callable.call(interp, args)
 	if err != nil {
-		return nil, err
+		return nil, NewRuntimeError(expr.paren, fmt.Sprintf("%s", err.Error()))
 	}
 	return value, nil
 }
